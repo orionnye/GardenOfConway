@@ -89,8 +89,8 @@ export const deserializePattern = (json: string): Pattern => {
 export const encodePatternUrl = (cells: Cell[], bounds: Bounds): string => {
   const json = serializePattern(cells, bounds);
   
-  // Convert to base64
-  const base64 = Buffer.from(json, 'utf-8').toString('base64');
+  // Convert to base64 using browser-native btoa
+  const base64 = btoa(json);
   
   // Make URL-safe: replace + with -, / with _, remove padding =
   return base64
@@ -116,8 +116,8 @@ export const decodePatternUrl = (encoded: string): Pattern => {
   const padding = (4 - (base64.length % 4)) % 4;
   base64 += '='.repeat(padding);
   
-  // Decode from base64
-  const json = Buffer.from(base64, 'base64').toString('utf-8');
+  // Decode from base64 using browser-native atob
+  const json = atob(base64);
   
   // Deserialize JSON
   return deserializePattern(json);

@@ -2,7 +2,7 @@ Dux {
   initialState {
     cells: [] // Array of live cell coordinates [{x, y}]
     generation: 0
-    bounds: { width: 30, height: 30 }
+    bounds: { width: 60, height: 60 }
     isRunning: false
   }
 

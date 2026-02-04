@@ -2,10 +2,11 @@ import { legacy_createStore as createStore, applyMiddleware, combineReducers, Re
 import createSagaMiddleware from 'redux-saga';
 import { composeWithDevTools } from '@redux-devtools/extension';
 import gridReducer from './grid-dux';
+import simulationSaga from '../sagas/simulation-saga';
 
-// Root saga will be added when we create sagas
+// Root saga - combines all sagas
 function* rootSaga() {
-  // Placeholder - sagas will be added here
+  yield* simulationSaga();
 }
 
 // Root reducer - combines all dux reducers

@@ -222,15 +222,15 @@ describe('patterns - URL-Safe Encoding', () => {
     // Test compact encoding for typical pattern
     {
       const cells: Cell[] = [];
-      // Create a 30x30 grid with ~20 cells (more realistic pattern)
+      // Create a 60x60 grid with ~20 cells (more realistic pattern)
       for (let i = 0; i < 20; i++) {
-        cells.push({ x: i % 30, y: Math.floor(i / 6) });
+        cells.push({ x: i % 60, y: Math.floor(i / 6) });
       }
-      const bounds: Bounds = { width: 30, height: 30 };
+      const bounds: Bounds = { width: 60, height: 60 };
       const encoded = encodePatternUrl(cells, bounds);
 
       assert({
-        given: 'a 30×30 grid with 20 cells',
+        given: 'a 60×60 grid with 20 cells',
         should: 'produce reasonably compact URL encoding',
         actual: encoded.length < 600,
         expected: true,
