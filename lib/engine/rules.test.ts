@@ -1,6 +1,13 @@
 import { describe, test } from 'vitest';
 import { assert } from 'riteway/vitest';
-import { getNeighborCount, isWithinBounds, stepGrid, getBirthCandidates, isValidBirthCandidate } from './rules';
+import { 
+  getNeighborCount, 
+  isWithinBounds, 
+  stepGrid, 
+  getBirthCandidates, 
+  isValidBirthCandidate,
+  applyBirth
+} from './rules';
 import type { Cell, Bounds } from './types';
 
 describe('rules - Grid Utilities', () => {
@@ -380,6 +387,133 @@ describe('rules - Life Garden Mode Support', () => {
         should: 'return false (not valid)',
         actual: isValidBirthCandidate(cell, liveCells, bounds),
         expected: false,
+      });
+    }
+  });
+
+  test('applyBirth()', () => {
+    // Test valid birth
+    {
+      const liveCells: Cell[] = [
+        { x: 4, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 4 },
+      ];
+      const bounds: Bounds = { width: 10, height: 10 };
+      const birthCell: Cell = { x: 5, y: 5 }; // Valid candidate with 3 neighbors
+      
+      const newCells = applyBirth(birthCell, liveCells, bounds);
+
+      assert({
+        given: 'a valid birth candidate cell and current live cells',
+        should: 'add the cell to live cells array',
+        actual: newCells.length,
+        expected: liveCells.length + 1,
+      });
+    }
+
+    // Test birth cell is included
+    {
+      const liveCells: Cell[] = [
+        { x: 4, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 4 },
+      ];
+      const bounds: Bounds = { width: 10, height: 10 };
+      const birthCell: Cell = { x: 5, y: 5 };
+      
+      const newCells = applyBirth(birthCell, liveCells, bounds);
+      const hasBirthCell = newCells.some(c => c.x === 5 && c.y === 5);
+
+      assert({
+        given: 'a birth at position (5,5)',
+        should: 'include that cell in returned array',
+        actual: hasBirthCell,
+        expected: true,
+      });
+    }
+
+    // Test immutability
+    {
+      const liveCells: Cell[] = [
+        { x: 4, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 4 },
+      ];
+      const bounds: Bounds = { width: 10, height: 10 };
+      const birthCell: Cell = { x: 5, y: 5 };
+      const originalLength = liveCells.length;
+      
+      applyBirth(birthCell, liveCells, bounds);
+
+      assert({
+        given: 'a valid birth applied',
+        should: 'return new array without mutating input',
+        actual: liveCells.length,
+        expected: originalLength,
+      });
+    }
+
+    // Test already alive error
+    {
+      const liveCells: Cell[] = [
+        { x: 5, y: 5 }, { x: 4, y: 5 }, { x: 6, y: 5 },
+      ];
+      const bounds: Bounds = { width: 10, height: 10 };
+      const birthCell: Cell = { x: 5, y: 5 }; // Already alive
+      let errorThrown = false;
+
+      try {
+        applyBirth(birthCell, liveCells, bounds);
+      } catch (error) {
+        errorThrown = true;
+      }
+
+      assert({
+        given: 'an invalid candidate (already alive)',
+        should: 'throw descriptive error',
+        actual: errorThrown,
+        expected: true,
+      });
+    }
+
+    // Test out of bounds error
+    {
+      const liveCells: Cell[] = [
+        { x: 4, y: 5 }, { x: 6, y: 5 }, { x: 5, y: 4 },
+      ];
+      const bounds: Bounds = { width: 5, height: 5 };
+      const birthCell: Cell = { x: 10, y: 10 }; // Out of bounds
+      let errorThrown = false;
+
+      try {
+        applyBirth(birthCell, liveCells, bounds);
+      } catch (error) {
+        errorThrown = true;
+      }
+
+      assert({
+        given: 'an invalid candidate (out of bounds)',
+        should: 'throw descriptive error',
+        actual: errorThrown,
+        expected: true,
+      });
+    }
+
+    // Test wrong neighbor count error
+    {
+      const liveCells: Cell[] = [
+        { x: 4, y: 5 }, { x: 6, y: 5 }, // Only 2 neighbors
+      ];
+      const bounds: Bounds = { width: 10, height: 10 };
+      const birthCell: Cell = { x: 5, y: 5 }; // Not exactly 3 neighbors
+      let errorThrown = false;
+
+      try {
+        applyBirth(birthCell, liveCells, bounds);
+      } catch (error) {
+        errorThrown = true;
+      }
+
+      assert({
+        given: 'an invalid candidate (not exactly 3 neighbors)',
+        should: 'throw descriptive error',
+        actual: errorThrown,
+        expected: true,
       });
     }
   });

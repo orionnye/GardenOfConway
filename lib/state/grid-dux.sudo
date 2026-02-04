@@ -15,6 +15,8 @@ Dux {
     resetGrid(payload: { bounds? })
     toggleRunning()
     setCells(payload: { cells })
+    loadPattern(payload: { pattern })
+    loadPatternFromLibrary(payload: { name })
   }
 
   selectors {
@@ -33,5 +35,7 @@ Dux {
     "Given resetGrid action, should reset generation to 0 and optionally update bounds"
     "Given toggleRunning action, should toggle isRunning boolean"
     "Given setCells action, should update cells without changing generation"
+    "Given loadPattern action with JSON, should deserialize and load pattern into state"
+    "Given loadPatternFromLibrary action with pattern name, should load that pattern from library"
   ]
 }

@@ -16,9 +16,18 @@
 - ✅ **Setup Redux + redux-saga** — State management with Autodux pattern
   - Epic: `tasks/setup-redux-saga.md`
 
-## Next: Core Engine
+## 🚧 In Progress: Core Engine
 
-- Implement pure simulation engine (`/lib/engine/`) with TDD
+- 🔄 **Implement simulation engine** — Core GoL rules with TDD
+  - Epic: `tasks/implement-simulation-engine.md`
+  - Status: ~85% complete (rules done, patterns done, needs applyBirth)
+- ✅ **Pattern serialization** — Save/load/share patterns (JSON, RLE, URL encoding)
+  - Epic: `tasks/implement-pattern-serialization.md` (COMPLETED 2026-02-04)
+- 📋 **Pattern system integration** — Wire patterns to Redux state and add manual birth
+  - Epic: `tasks/integrate-pattern-system.md`
+
+## Next: Rendering & UI
+
 - Build PixiJS Grid component
 - Create first user journey for testing
 

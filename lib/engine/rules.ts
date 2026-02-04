@@ -170,3 +170,40 @@ export const isValidBirthCandidate = (
   const neighborCount = getNeighborCount(cell, liveCells);
   return neighborCount === 3;
 };
+
+/**
+ * Apply a manual birth for Life Garden mode
+ * 
+ * Validates that the cell is a valid birth candidate, then adds it to the live cells.
+ * This is used for player-controlled births in Life Garden mode.
+ * 
+ * @param cell - Cell to birth
+ * @param liveCells - Current live cells
+ * @param bounds - Grid dimensions
+ * @returns New cells array with the birth applied
+ * @throws Error if cell is not a valid birth candidate
+ */
+export const applyBirth = (
+  cell: Cell,
+  liveCells: Cell[],
+  bounds: Bounds
+): Cell[] => {
+  // Validate it's a valid birth candidate
+  if (!isValidBirthCandidate(cell, liveCells, bounds)) {
+    // Provide specific error message
+    if (!isWithinBounds(cell, bounds)) {
+      throw new Error(`Cell (${cell.x}, ${cell.y}) is out of bounds (${bounds.width}x${bounds.height})`);
+    }
+    
+    const isAlive = liveCells.some(liveCell => cellsEqual(liveCell, cell));
+    if (isAlive) {
+      throw new Error(`Cell (${cell.x}, ${cell.y}) is already alive`);
+    }
+    
+    const neighborCount = getNeighborCount(cell, liveCells);
+    throw new Error(`Cell (${cell.x}, ${cell.y}) has ${neighborCount} neighbors, must have exactly 3 for birth`);
+  }
+  
+  // Return new array with the birth cell added (immutable)
+  return [...liveCells, cell];
+};
