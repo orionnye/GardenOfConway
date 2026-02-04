@@ -1,0 +1,37 @@
+Dux {
+  initialState {
+    cells: [] // Array of live cell coordinates [{x, y}]
+    generation: 0
+    bounds: { width: 30, height: 30 }
+    isRunning: false
+  }
+
+  slice: "grid"
+
+  actions {
+    setGrid(payload: { cells, bounds? })
+    stepGrid()
+    clearGrid()
+    resetGrid(payload: { bounds? })
+    toggleRunning()
+    setCells(payload: { cells })
+  }
+
+  selectors {
+    getGrid: state => state[slice]
+    getCells: state => state[slice].cells
+    getGeneration: state => state[slice].generation
+    getBounds: state => state[slice].bounds
+    getIsRunning: state => state[slice].isRunning
+  }
+
+  requirements [
+    "Given an initial state, should have empty cells and generation 0"
+    "Given setGrid action with cells, should update cells in state"
+    "Given stepGrid action, should increment generation"
+    "Given clearGrid action, should set cells to empty array"
+    "Given resetGrid action, should reset generation to 0 and optionally update bounds"
+    "Given toggleRunning action, should toggle isRunning boolean"
+    "Given setCells action, should update cells without changing generation"
+  ]
+}

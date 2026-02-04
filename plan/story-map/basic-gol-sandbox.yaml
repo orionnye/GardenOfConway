@@ -1,0 +1,41 @@
+journey:
+  name: Basic GoL Sandbox
+  persona:
+    name: Alex
+    age: 28
+    background: Software developer curious about cellular automata
+    motivation: Wants to quickly experiment with Conway's Game of Life patterns
+    
+  steps:
+    - name: Visit Homepage
+      action: Navigate to http://localhost:8080
+      intent: Access the GoL sandbox
+      success: Page loads and displays the application
+      checkpoint: true
+      
+    - name: View Empty Grid
+      action: Observe the initial grid state
+      intent: Understand the starting point
+      success: Grid is visible and empty (or shows a default pattern)
+      
+    - name: Draw Cells
+      action: Click or tap on grid cells to make them alive
+      intent: Create a custom starting pattern
+      success: Clicked cells become alive and are visually highlighted
+      checkpoint: true
+      
+    - name: Step Forward
+      action: Click the "Step" button
+      intent: Advance the simulation by one generation
+      success: Grid updates according to GoL rules, generation counter increments
+      
+    - name: Play/Pause
+      action: Click the "Play" button to start auto-advancing
+      intent: Watch the pattern evolve automatically
+      success: Grid continuously updates at set speed; button changes to "Pause"
+      checkpoint: true
+      
+    - name: Clear Grid
+      action: Click the "Clear" button
+      intent: Reset to empty state for new experiment
+      success: All cells become dead, generation resets to 0

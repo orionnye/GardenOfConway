@@ -1,0 +1,221 @@
+---
+description: Agent execution workflow constraints and behavioral guidelines for working with this codebase
+alwaysApply: true
+---
+# Agent Execution Workflow
+
+Act as a thoughtful planning assistant that respects user control over execution and approval workflows.
+
+## Task File Lifecycle
+
+Task files follow a strict three-phase lifecycle with different access permissions:
+
+```
+PLANNING PHASE (writable):
+  - Task file is WRITABLE
+  - Create/modify markdown requirements and approach
+  - Document success criteria and dependencies
+  - Status: 📋 PLANNED
+
+EXECUTION PHASE (READ-ONLY):
+  - Task file is READ-ONLY
+  - Read task for guidance only
+  - Make ALL changes in source files
+  - DO NOT modify task file contents
+  - After implementation, update status to: ⏸️ PENDING REVIEW
+  
+COMPLETION PHASE (status only):
+  - User verifies implementation
+  - User approves → Agent updates status to: ✅ COMPLETED
+  - Only status marker changes, no other modifications
+```
+
+**CRITICAL**: During execution, task files are read-only references. All implementation work happens in source files.
+
+## Core Workflow Principles
+
+### 1. Terminal Command Constraints
+
+**CRITICAL**: Agents must NEVER run servers or persistent commands in terminals.
+
+```
+FORBIDDEN:
+  npm run dev
+  npm start
+  yarn dev
+  next dev
+  any long-running process
+  any background daemon
+  any watch mode command
+
+REASON:
+  Leave terminal control to the user
+  Prevents resource conflicts
+  User manages their own development environment
+```
+
+### 2. Task Approval Protocol
+
+**CRITICAL**: Tasks must NOT be marked as complete until user explicitly approves after execution review.
+
+```
+WORKFLOW:
+  1. Plan task → Present for approval → Status: 📋 PLANNED
+  2. Execute task (in source files) → Status: ⏸️ PENDING REVIEW
+  3. User reviews execution results
+  4. User explicitly approves → Status: ✅ COMPLETED
+
+NEVER:
+  - Auto-mark tasks complete after execution
+  - Assume approval from silence
+  - Skip PENDING REVIEW status
+  - Mark complete before user verifies
+```
+
+### 3. Task File Purpose
+
+**CRITICAL**: Task files are planning documents, NOT execution logs.
+
+```
+TASK FILES SHOULD:
+  ✓ Lay out the path for resolution
+  ✓ Document requirements and approach
+  ✓ Provide markdown notes and guidance
+  ✓ Define success criteria
+  ✓ List dependencies and context
+
+TASK FILES SHOULD NOT:
+  ✗ Contain code implementations
+  ✗ Resolve issues directly
+  ✗ Include file contents or diffs
+  ✗ Be execution logs
+
+PATTERN:
+  Tasks are maps, not the journey itself
+  Code changes happen in source files
+  Task files guide the work
+```
+
+## Integration with Task Creator
+
+When using @task-creator.mdc workflow:
+
+```typescript
+createTask() {
+  1. Gather context
+  2. Create markdown task file with:
+     - Clear goal statement
+     - Requirements (Given X, should Y format)
+     - Implementation notes/guidance
+     - Success criteria
+  3. Present plan for approval
+  4. DO NOT include code implementations in task file
+}
+
+executeTask() {
+  1. Reference task file for guidance (READ-ONLY)
+  2. Make code changes in source files (NOT in task file)
+  3. Update task status to: ⏸️ PENDING REVIEW
+  4. Report completion with summary
+  5. WAIT for explicit user verification
+  6. After user approves, update status to: ✅ COMPLETED
+}
+```
+
+## Interaction Patterns
+
+### Planning Phase
+```markdown
+Agent: "I'll create a task file that outlines..."
+Agent: *creates task with markdown notes and requirements*
+Agent: "Ready to proceed? [awaiting approval]"
+```
+
+### Execution Phase
+```markdown
+Agent: "Executing based on task guidance..."
+Agent: *reads task file (READ-ONLY)*
+Agent: *makes changes to source files (NOT task file)*
+Agent: *updates task status to ⏸️ PENDING REVIEW*
+Agent: "Implementation complete. Please review."
+Agent: [WAITS for verification]
+```
+
+### Approval Phase
+```markdown
+User: "Looks good" | "Approved" | "Ship it"
+Agent: *updates task status to ✅ COMPLETED*
+Agent: "Task marked complete."
+```
+
+## Status Markers
+
+```markdown
+Task Status Lifecycle:
+📋 PLANNED        → Task created with requirements (planning phase complete)
+🚧 IN PROGRESS    → Execution approved and underway
+⏸️ PENDING REVIEW → Implementation complete, awaiting user verification
+✅ COMPLETED      → User verified and approved
+🚫 CANCELLED      → Task abandoned
+
+Critical Flow:
+  📋 PLANNED → 🚧 IN PROGRESS → ⏸️ PENDING REVIEW → ✅ COMPLETED
+                                      ↑
+                                 WAIT HERE for user verification
+```
+
+## Anti-Patterns to Avoid
+
+```typescript
+// ❌ DON'T: Run dev server
+await shell("npm run dev")
+
+// ❌ DON'T: Auto-complete task
+task.status = "completed" // without user approval
+
+// ❌ DON'T: Put code in task file
+"""
+## Implementation
+```javascript
+export function myCode() { ... }
+"""
+
+// ✅ DO: Guide without executing persistent commands
+"""
+## To verify locally
+User should run: `npm run dev`
+Then navigate to: http://localhost:3000
+"""
+
+// ✅ DO: Set pending review status and wait
+"""
+**Status**: ⏸️ PENDING REVIEW
+
+Implementation completed. Awaiting user verification before marking complete.
+"""
+
+// ✅ DO: Keep tasks as guidance
+"""
+## Implementation Approach
+- Create file at lib/utils/helper.ts
+- Export pure function with signature...
+- Add unit tests in helper.test.ts
+"""
+```
+
+## Commands Reference
+
+When working within this workflow:
+
+```bash
+/task    # Create task file (markdown planning document)
+/execute # Execute based on task guidance (code in source files)
+/list    # Show task status (respect approval gates)
+```
+
+## Summary
+
+Three cardinal rules:
+1. **No persistent terminal commands** - Let user control their environment
+2. **Task files are read-only during execution** - Plans in markdown, code in source files
+3. **Three-phase workflow** - Plan → Execute (⏸️ PENDING REVIEW) → User Verifies → Complete (✅)
