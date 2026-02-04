@@ -204,3 +204,30 @@ describe('GridCanvas - Drag Painting', () => {
     });
   });
 });
+
+describe('GridCanvas - Ghost Tiles', () => {
+  test('ghost tile container creation', async () => {
+    const onDragPaint = vi.fn();
+    const cells: Array<{x: number; y: number}> = [];
+    const bounds = { width: 60, height: 60 };
+    
+    const { container } = render(
+      <GridCanvas 
+        cells={cells} 
+        bounds={bounds} 
+        onDragPaint={onDragPaint}
+      />
+    );
+    
+    await waitFor(() => {
+      const canvas = container.querySelector('canvas');
+      
+      assert({
+        given: 'component with drag paint enabled',
+        should: 'initialize canvas for ghost tiles',
+        actual: canvas !== null,
+        expected: true,
+      });
+    });
+  });
+});

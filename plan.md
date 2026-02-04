@@ -51,6 +51,11 @@
   - Epic: `tasks/expand-grid-size.md`
   - Status: Implementation complete with pattern centering, awaiting user verification
   - All 54 tests passing
+
+- ⏸️ **Enable drag painting** — Allow continuous cell painting by dragging mouse/touch
+  - Epic: `tasks/enable-drag-painting.md`
+  - Status: Implementation complete, awaiting user verification
+  - All 58 tests passing
   
 ## ⏸️ Pending Review: Zoom and Pan
 
@@ -64,10 +69,10 @@
 - 📋 **Refine zoom controls** — Dynamic zoom limits and slower zoom rate
   - Epic: `tasks/refine-zoom-controls.md`
   - Priority: High (improve zoom control usability)
-  
-- 📋 **Enable drag painting** — Allow continuous cell painting by dragging mouse/touch
-  - Epic: `tasks/enable-drag-painting.md`
-  - Priority: Critical (current single-click interaction is too limiting)
+
+- 📋 **Add drag paint ghost tiles** — Visual preview of cells during drag painting
+  - Epic: `tasks/add-drag-paint-ghost-tiles.md`
+  - Priority: High (improve drag painting feedback and accuracy)
 
 ## Future: User Journey Testing
 

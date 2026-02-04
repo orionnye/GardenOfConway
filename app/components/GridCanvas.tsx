@@ -34,6 +34,7 @@ export default function GridCanvas({
   const cellsContainerRef = useRef<PIXI.Container | null>(null);
   const gridLinesRef = useRef<PIXI.Graphics | null>(null);
   const viewportContainerRef = useRef<PIXI.Container | null>(null);
+  const ghostTilesContainerRef = useRef<PIXI.Container | null>(null);
   
   // Viewport state for zoom and pan
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
@@ -45,6 +46,10 @@ export default function GridCanvas({
   const paintedCellsRef = useRef<Set<string>>(new Set());
   const dragBatchRef = useRef<Cell[]>([]);
   const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Ghost tiles state
+  const [ghostTiles, setGhostTiles] = useState<Cell[]>([]);
+  const ghostTilesRef = useRef<Set<string>>(new Set());
   
   // Pan state (separate from drag painting)
   const [isPanning, setIsPanning] = useState(false);
@@ -152,6 +157,12 @@ export default function GridCanvas({
     
     paintedCellsRef.current.add(key);
     dragBatchRef.current.push(cell);
+    
+    // Add ghost tile for visual feedback
+    if (!ghostTilesRef.current.has(key)) {
+      ghostTilesRef.current.add(key);
+      setGhostTiles(prev => [...prev, cell]);
+    }
 
     // Clear existing timer
     if (batchTimerRef.current) {
@@ -206,6 +217,12 @@ export default function GridCanvas({
         const cellsContainer = new PIXI.Container();
         viewportContainer.addChild(cellsContainer);
         cellsContainerRef.current = cellsContainer;
+        
+        // Create container for ghost tiles (above cells)
+        const ghostTilesContainer = new PIXI.Container();
+        ghostTilesContainer.interactiveChildren = false; // Don't block pointer events
+        viewportContainer.addChild(ghostTilesContainer);
+        ghostTilesContainerRef.current = ghostTilesContainer;
 
         // Draw grid lines
         drawGridLines(gridLines, bounds);
@@ -245,6 +262,10 @@ export default function GridCanvas({
             setDragMode(isAlive ? 'erase' : 'draw');
             paintedCellsRef.current.clear();
             dragBatchRef.current = [];
+            
+            // Clear ghost tiles
+            ghostTilesRef.current.clear();
+            setGhostTiles([]);
             
             // Add first cell to batch
             addCellToBatch(cell);
@@ -303,6 +324,10 @@ export default function GridCanvas({
             flushDragBatch();
             setIsDragging(false);
             paintedCellsRef.current.clear();
+            
+            // Clear ghost tiles
+            ghostTilesRef.current.clear();
+            setGhostTiles([]);
           }
         };
         
@@ -417,6 +442,7 @@ export default function GridCanvas({
         appRef.current = null;
         cellsContainerRef.current = null;
         gridLinesRef.current = null;
+        ghostTilesContainerRef.current = null;
       }
     };
   }, [bounds.width, bounds.height]); // Only re-initialize when bounds change
@@ -469,6 +495,48 @@ export default function GridCanvas({
       cellsContainer.addChild(graphics);
     });
   }, [cells, bounds]);
+  
+  // Render ghost tiles for drag preview
+  useEffect(() => {
+    if (!appRef.current || !ghostTilesContainerRef.current) return;
+
+    const ghostContainer = ghostTilesContainerRef.current;
+    const app = appRef.current;
+
+    // Clear previous ghost tiles
+    ghostContainer.removeChildren();
+
+    // Calculate cell size to fit viewport
+    const cellSize = calculateCellSize(
+      app.canvas.width,
+      app.canvas.height,
+      bounds.width,
+      bounds.height
+    );
+
+    // Render each ghost tile
+    ghostTiles.forEach(cell => {
+      const graphics = new PIXI.Graphics();
+      
+      // Draw ghost tile rectangle
+      graphics.rect(
+        cell.x * cellSize,
+        cell.y * cellSize,
+        cellSize,
+        cellSize
+      );
+      
+      // Use green for draw mode, red for erase mode, with 40% opacity
+      const ghostColor = dragMode === 'draw' ? 0x22c55e : 0xdc2626;
+      graphics.fill({ color: ghostColor, alpha: 0.4 });
+      
+      // Add subtle border
+      const borderColor = dragMode === 'draw' ? 0x166534 : 0x991b1b;
+      graphics.stroke({ color: borderColor, width: 1, alpha: 0.6 });
+
+      ghostContainer.addChild(graphics);
+    });
+  }, [ghostTiles, bounds, dragMode]);
 
   // Update cursor style based on mode
   const cursorStyle = isPanning 
