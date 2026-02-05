@@ -168,4 +168,38 @@ describe('GridControls', () => {
       expected: 'Reset View',
     });
   });
+
+  test('Play Button in Life Garden Mode', () => {
+    const rootReducer = combineReducers({
+      grid: gridReducer,
+    });
+
+    const store = createStore(rootReducer, {
+      grid: {
+        cells: [],
+        generation: 0,
+        bounds: { width: 60, height: 60 },
+        isRunning: false,
+        speed: 5,
+        mode: 'lifeGarden',
+      },
+    });
+
+    const { container } = render(
+      <Provider store={store}>
+        <GridControls />
+      </Provider>
+    );
+
+    const playButton = Array.from(container.querySelectorAll('button')).find(
+      btn => btn.textContent === 'Play' || btn.textContent === 'Pause'
+    ) as HTMLButtonElement;
+    
+    assert({
+      given: 'mode is "lifeGarden"',
+      should: 'disable Play button',
+      actual: playButton?.disabled,
+      expected: true,
+    });
+  });
 });

@@ -5,6 +5,7 @@ import {
   getGeneration, 
   getIsRunning, 
   getSpeed,
+  getMode,
   stepGrid, 
   toggleRunning, 
   resetGrid, 
@@ -17,6 +18,7 @@ export default function GridControls() {
   const generation = useSelector(getGeneration);
   const isRunning = useSelector(getIsRunning);
   const speed = useSelector(getSpeed);
+  const mode = useSelector(getMode);
 
   const handleStep = () => dispatch(stepGrid());
   const handlePlayPause = () => dispatch(toggleRunning());
@@ -47,8 +49,14 @@ export default function GridControls() {
 
         <button
           onClick={handlePlayPause}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+          className={`px-4 py-2 rounded ${
+            mode === 'lifeGarden'
+              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
+          disabled={mode === 'lifeGarden'}
           aria-label={isRunning ? 'Pause simulation' : 'Play simulation'}
+          title={mode === 'lifeGarden' ? 'Play is disabled in Life Garden mode' : ''}
         >
           {isRunning ? 'Pause' : 'Play'}
         </button>

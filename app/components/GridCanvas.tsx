@@ -11,8 +11,11 @@ interface Cell {
 interface GridCanvasProps {
   cells?: Cell[];
   bounds?: { width: number; height: number };
+  birthCandidates?: Cell[];
+  mode?: 'classic' | 'lifeGarden';
   onCellClick?: (cell: Cell, isAlive: boolean) => void;
   onDragPaint?: (cells: Cell[], mode: 'draw' | 'erase') => void;
+  onBirthCandidateClick?: (cell: Cell) => void;
   onViewportReset?: () => void;
 }
 
@@ -25,8 +28,11 @@ interface Viewport {
 export default function GridCanvas({ 
   cells = [], 
   bounds = { width: 60, height: 60 },
+  birthCandidates = [],
+  mode = 'classic',
   onCellClick,
   onDragPaint,
+  onBirthCandidateClick,
   onViewportReset,
 }: GridCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +41,8 @@ export default function GridCanvas({
   const gridLinesRef = useRef<PIXI.Graphics | null>(null);
   const viewportContainerRef = useRef<PIXI.Container | null>(null);
   const ghostTilesContainerRef = useRef<PIXI.Container | null>(null);
+  const birthCandidatesContainerRef = useRef<PIXI.Container | null>(null);
+  const invalidClickFeedbackRef = useRef<PIXI.Graphics | null>(null);
   
   // Viewport state for zoom and pan
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
@@ -57,16 +65,22 @@ export default function GridCanvas({
 
   // Store latest values in refs to avoid triggering re-initialization
   const cellsRef = useRef<Cell[]>(cells);
+  const birthCandidatesRef = useRef<Cell[]>(birthCandidates);
+  const modeRef = useRef(mode);
   const onCellClickRef = useRef(onCellClick);
   const onDragPaintRef = useRef(onDragPaint);
+  const onBirthCandidateClickRef = useRef(onBirthCandidateClick);
   const dragModeRef = useRef(dragMode);
   const isDraggingRef = useRef(isDragging);
 
   // Update refs when props/state change
   useEffect(() => {
     cellsRef.current = cells;
+    birthCandidatesRef.current = birthCandidates;
+    modeRef.current = mode;
     onCellClickRef.current = onCellClick;
     onDragPaintRef.current = onDragPaint;
+    onBirthCandidateClickRef.current = onBirthCandidateClick;
     dragModeRef.current = dragMode;
     isDraggingRef.current = isDragging;
     viewportRef.current = viewport;
@@ -109,6 +123,41 @@ export default function GridCanvas({
   // Helper: Check if cell is alive (uses ref for latest cells)
   const isCellAlive = (cell: Cell) => {
     return cellsRef.current.some(c => c.x === cell.x && c.y === cell.y);
+  };
+
+  // Helper: Check if cell is a birth candidate
+  const isBirthCandidate = (cell: Cell) => {
+    return birthCandidatesRef.current.some(c => c.x === cell.x && c.y === cell.y);
+  };
+
+  // Helper: Show invalid click feedback (red flash)
+  const showInvalidClickFeedback = (cell: Cell) => {
+    if (!appRef.current || !invalidClickFeedbackRef.current) return;
+    
+    const cellSize = calculateCellSize(
+      appRef.current.canvas.width,
+      appRef.current.canvas.height,
+      bounds.width,
+      bounds.height
+    );
+    
+    const feedback = invalidClickFeedbackRef.current;
+    feedback.clear();
+    feedback.rect(
+      cell.x * cellSize,
+      cell.y * cellSize,
+      cellSize,
+      cellSize
+    );
+    feedback.fill({ color: 0xdc2626, alpha: 0.6 });
+    feedback.visible = true;
+    
+    // Fade out after 200ms
+    setTimeout(() => {
+      if (feedback) {
+        feedback.visible = false;
+      }
+    }, 200);
   };
 
   // Helper: Get cell from coordinates (accounting for viewport transformation)
@@ -223,6 +272,18 @@ export default function GridCanvas({
         ghostTilesContainer.interactiveChildren = false; // Don't block pointer events
         viewportContainer.addChild(ghostTilesContainer);
         ghostTilesContainerRef.current = ghostTilesContainer;
+        
+        // Create container for birth candidates (above ghost tiles)
+        const birthCandidatesContainer = new PIXI.Container();
+        birthCandidatesContainer.interactiveChildren = false;
+        viewportContainer.addChild(birthCandidatesContainer);
+        birthCandidatesContainerRef.current = birthCandidatesContainer;
+        
+        // Create graphics for invalid click feedback (top layer)
+        const invalidClickFeedback = new PIXI.Graphics();
+        invalidClickFeedback.visible = false;
+        viewportContainer.addChild(invalidClickFeedback);
+        invalidClickFeedbackRef.current = invalidClickFeedback;
 
         // Draw grid lines
         drawGridLines(gridLines, bounds);
@@ -234,8 +295,8 @@ export default function GridCanvas({
 
         // Add pointer event handlers
         const handlePointerDown = (event: any) => {
-          const x = event.global?.x || event.clientX || 0;
-          const y = event.global?.y || event.clientY || 0;
+          const x = event.global?.x ?? event.clientX ?? 0;
+          const y = event.global?.y ?? event.clientY ?? 0;
           const button = event.button ?? 0;
           
           // Right-click or middle-click for panning
@@ -253,6 +314,17 @@ export default function GridCanvas({
           // Left-click for painting/clicking
           const cell = getCellFromCoords(x, y);
           if (!cell) return;
+          
+          // Life Garden mode: handle birth candidate clicks
+          if (modeRef.current === 'lifeGarden' && onBirthCandidateClickRef.current) {
+            if (isBirthCandidate(cell)) {
+              onBirthCandidateClickRef.current(cell);
+            } else {
+              // Show red flash feedback for invalid click
+              showInvalidClickFeedback(cell);
+            }
+            return;
+          }
           
           const isAlive = isCellAlive(cell);
           
@@ -276,8 +348,8 @@ export default function GridCanvas({
         };
 
         const handlePointerMove = (event: any) => {
-          const x = event.global?.x || event.clientX || 0;
-          const y = event.global?.y || event.clientY || 0;
+          const x = event.global?.x ?? event.clientX ?? 0;
+          const y = event.global?.y ?? event.clientY ?? 0;
           
           // Handle panning
           if (panStartRef.current) {
@@ -385,10 +457,30 @@ export default function GridCanvas({
         interactiveContainer.on('pointerup', handlePointerUp);
         interactiveContainer.on('pointerupoutside', handlePointerUp);
 
-        // Also handle canvas events for fallback
-        app.canvas.addEventListener('mousedown', handlePointerDown);
-        app.canvas.addEventListener('mousemove', handlePointerMove);
-        app.canvas.addEventListener('mouseup', handlePointerUp);
+        // Also handle canvas events for fallback with coordinate conversion
+        app.canvas.addEventListener('mousedown', (e) => {
+          const rect = app.canvas.getBoundingClientRect();
+          const event = {
+            ...e,
+            clientX: e.clientX - rect.left,
+            clientY: e.clientY - rect.top,
+          };
+          handlePointerDown(event);
+        });
+        
+        app.canvas.addEventListener('mousemove', (e) => {
+          const rect = app.canvas.getBoundingClientRect();
+          const event = {
+            ...e,
+            clientX: e.clientX - rect.left,
+            clientY: e.clientY - rect.top,
+          };
+          handlePointerMove(event);
+        });
+        
+        app.canvas.addEventListener('mouseup', (e) => {
+          handlePointerUp();
+        });
         
         // Add wheel event for zooming
         app.canvas.addEventListener('wheel', handleWheel, { passive: false });
@@ -537,6 +629,53 @@ export default function GridCanvas({
       ghostContainer.addChild(graphics);
     });
   }, [ghostTiles, bounds, dragMode]);
+
+  // Render birth candidates in Life Garden mode
+  useEffect(() => {
+    if (!appRef.current || !birthCandidatesContainerRef.current) return;
+
+    const candidatesContainer = birthCandidatesContainerRef.current;
+    const app = appRef.current;
+
+    // Clear previous birth candidates
+    candidatesContainer.removeChildren();
+
+    // Only render in Life Garden mode
+    if (mode !== 'lifeGarden') return;
+
+    // Calculate cell size to fit viewport
+    const cellSize = calculateCellSize(
+      app.canvas.width,
+      app.canvas.height,
+      bounds.width,
+      bounds.height
+    );
+
+    // Render each birth candidate with yellow glow
+    birthCandidates.forEach(cell => {
+      // Skip if cell is already alive
+      const isAlive = cells.some(c => c.x === cell.x && c.y === cell.y);
+      if (isAlive) return;
+
+      const graphics = new PIXI.Graphics();
+      
+      // Draw birth candidate rectangle
+      graphics.rect(
+        cell.x * cellSize,
+        cell.y * cellSize,
+        cellSize,
+        cellSize
+      );
+      
+      // Yellow fill with 50% opacity
+      graphics.fill({ color: 0xfacc15, alpha: 0.5 });
+      
+      // Yellow glow border
+      graphics.stroke({ color: 0xeab308, width: 2, alpha: 0.8 });
+
+      candidatesContainer.addChild(graphics);
+    });
+  }, [birthCandidates, cells, bounds, mode]);
 
   // Update cursor style based on mode
   const cursorStyle = isPanning 

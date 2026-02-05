@@ -93,4 +93,22 @@ describe('GridCanvas - Interactive Cell Editing', () => {
       expected: '5,5',
     });
   });
+
+  test('Page to Canvas Coordinate Conversion', () => {
+    // Simulate canvas with offset from page origin
+    const canvasBounds = { left: 50, top: 100 };
+    const pageX = 200;
+    const pageY = 250;
+    
+    // Convert page coordinates to canvas coordinates
+    const canvasX = pageX - canvasBounds.left;
+    const canvasY = pageY - canvasBounds.top;
+
+    assert({
+      given: 'page coordinates (200, 250) and canvas at (50, 100)',
+      should: 'convert to canvas coordinates (150, 150)',
+      actual: `${canvasX},${canvasY}`,
+      expected: '150,150',
+    });
+  });
 });

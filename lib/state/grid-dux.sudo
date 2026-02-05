@@ -4,6 +4,9 @@ Dux {
     generation: 0
     bounds: { width: 60, height: 60 }
     isRunning: false
+    speed: 5 // 1-10 steps per second
+    mode: 'classic' // 'classic' | 'lifeGarden'
+    birthCandidates: [] // Valid birth positions in Life Garden mode
   }
 
   slice: "grid"
@@ -17,6 +20,9 @@ Dux {
     setCells(payload: { cells })
     loadPattern(payload: { pattern })
     loadPatternFromLibrary(payload: { name })
+    setSpeed(payload: { speed })
+    setMode(payload: { mode })
+    applyPlayerBirth(payload: { cell })
   }
 
   selectors {
@@ -25,6 +31,9 @@ Dux {
     getGeneration: state => state[slice].generation
     getBounds: state => state[slice].bounds
     getIsRunning: state => state[slice].isRunning
+    getSpeed: state => state[slice].speed
+    getMode: state => state[slice].mode
+    getBirthCandidates: state => state[slice].birthCandidates
   }
 
   requirements [

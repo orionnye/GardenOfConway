@@ -2,7 +2,14 @@
 
 import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getCells, getBounds, setCells } from '@/lib/state/grid-dux';
+import { 
+  getCells, 
+  getBounds, 
+  setCells, 
+  getBirthCandidates, 
+  getMode,
+  applyPlayerBirth,
+} from '@/lib/state/grid-dux';
 import GridCanvas from './GridCanvas';
 
 interface Cell {
@@ -14,6 +21,8 @@ export default function GridContainer() {
   const dispatch = useDispatch();
   const cells = useSelector(getCells);
   const bounds = useSelector(getBounds);
+  const birthCandidates = useSelector(getBirthCandidates);
+  const mode = useSelector(getMode);
 
   const handleCellClick = useCallback((cell: Cell, isAlive: boolean) => {
     let newCells: Cell[];
@@ -49,12 +58,19 @@ export default function GridContainer() {
     dispatch(setCells({ cells: newCells }));
   }, [cells, dispatch]);
 
+  const handleBirthCandidateClick = useCallback((cell: Cell) => {
+    dispatch(applyPlayerBirth({ cell }));
+  }, [dispatch]);
+
   return (
     <GridCanvas 
       cells={cells} 
-      bounds={bounds} 
+      bounds={bounds}
+      birthCandidates={birthCandidates}
+      mode={mode}
       onCellClick={handleCellClick}
       onDragPaint={handleDragPaint}
+      onBirthCandidateClick={handleBirthCandidateClick}
     />
   );
 }

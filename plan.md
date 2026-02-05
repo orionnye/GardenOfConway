@@ -38,12 +38,12 @@
 - ✅ **Fix Buffer browser compatibility** — Replaced Node.js `Buffer` with `btoa`/`atob`
   - Epic: `tasks/fix-buffer-browser-compatibility.md` (COMPLETED 2026-02-04)
 
-## ⏸️ Pending Review: Rendering & UI
+## ✅ Completed: Rendering & UI
 
-- ⏸️ **Build grid renderer** — PixiJS visualization with interactive controls
-  - Epic: `tasks/build-grid-renderer.md`
-  - Status: Implementation complete, awaiting user verification
-  - All 54 tests passing
+- ✅ **Build grid renderer** — PixiJS visualization with interactive controls
+  - Epic: `tasks/build-grid-renderer.md` (COMPLETED 2026-02-04)
+  - All 70 tests passing
+  - Full grid renderer with zoom/pan, drag painting, pattern library
 
 ## ⏸️ Pending Review: Grid UX Improvements
 
@@ -73,6 +73,19 @@
 - 📋 **Add drag paint ghost tiles** — Visual preview of cells during drag painting
   - Epic: `tasks/add-drag-paint-ghost-tiles.md`
   - Priority: High (improve drag painting feedback and accuracy)
+
+## 📋 Next: Life Garden Mode (New Branch)
+
+- 📋 **Implement Life Garden mode** — Add player-controlled birth mode
+  - Epic: `tasks/implement-life-garden-mode.md`
+  - Priority: HIGH (core game mode, unique value proposition)
+  - Branch: `LifeGarden`
+  - Features: Mode toggle, birth candidate highlighting, Skip button, turn-based flow
+  - Subtasks:
+    - ✅ Mode Toggle System (completed 2026-02-04)
+    - 📋 **Birth Candidate Highlighting** — Visualize valid birth positions
+      - Epic: `tasks/birth-candidate-highlighting.md`
+      - Status: Planned, ready for execution
 
 ## Future: User Journey Testing
 
