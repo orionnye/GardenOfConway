@@ -8,6 +8,9 @@ import {
   setCells, 
   getBirthCandidates, 
   getMode,
+  getGoalTiles,
+  getObstacles,
+  getRunState,
   applyPlayerBirth,
 } from '@/lib/state/grid-dux';
 import GridCanvas from './GridCanvas';
@@ -23,6 +26,9 @@ export default function GridContainer() {
   const bounds = useSelector(getBounds);
   const birthCandidates = useSelector(getBirthCandidates);
   const mode = useSelector(getMode);
+  const goalTiles = useSelector(getGoalTiles);
+  const obstacles = useSelector(getObstacles);
+  const runState = useSelector(getRunState);
 
   const handleCellClick = useCallback((cell: Cell, isAlive: boolean) => {
     let newCells: Cell[];
@@ -59,15 +65,21 @@ export default function GridContainer() {
   }, [cells, dispatch]);
 
   const handleBirthCandidateClick = useCallback((cell: Cell) => {
+    if (runState === 'won') {
+      return;
+    }
     dispatch(applyPlayerBirth({ cell }));
-  }, [dispatch]);
+  }, [dispatch, runState]);
 
   return (
     <GridCanvas 
       cells={cells} 
       bounds={bounds}
       birthCandidates={birthCandidates}
+      goalTiles={goalTiles}
+      obstacles={obstacles}
       mode={mode}
+      runState={runState}
       onCellClick={handleCellClick}
       onDragPaint={handleDragPaint}
       onBirthCandidateClick={handleBirthCandidateClick}

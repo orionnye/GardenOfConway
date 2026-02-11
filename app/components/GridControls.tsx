@@ -6,6 +6,10 @@ import {
   getIsRunning, 
   getSpeed,
   getMode,
+  getPuzzleCount,
+  getPuzzleIndex,
+  getRunState,
+  getSeedsRemaining,
   stepGrid, 
   toggleRunning, 
   resetGrid, 
@@ -19,6 +23,12 @@ export default function GridControls() {
   const isRunning = useSelector(getIsRunning);
   const speed = useSelector(getSpeed);
   const mode = useSelector(getMode);
+  const runState = useSelector(getRunState);
+  const seedsRemaining = useSelector(getSeedsRemaining);
+  const puzzleIndex = useSelector(getPuzzleIndex);
+  const puzzleCount = useSelector(getPuzzleCount);
+  const isPlacementMode = mode === 'lifeGarden' || mode === 'puzzle';
+  const isPlacementModeWon = isPlacementMode && runState === 'won';
 
   const handleStep = () => dispatch(stepGrid());
   const handlePlayPause = () => dispatch(toggleRunning());
@@ -41,8 +51,9 @@ export default function GridControls() {
         <button
           onClick={handleStep}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-          disabled={isRunning}
+          disabled={isRunning || isPlacementModeWon}
           aria-label="Step one generation"
+          title={isPlacementModeWon ? 'Step is disabled after reaching a goal' : ''}
         >
           Step
         </button>
@@ -50,13 +61,13 @@ export default function GridControls() {
         <button
           onClick={handlePlayPause}
           className={`px-4 py-2 rounded ${
-            mode === 'lifeGarden'
+            isPlacementMode
               ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
               : 'bg-green-600 hover:bg-green-700 text-white'
           }`}
-          disabled={mode === 'lifeGarden'}
+          disabled={isPlacementMode}
           aria-label={isRunning ? 'Pause simulation' : 'Play simulation'}
-          title={mode === 'lifeGarden' ? 'Play is disabled in Life Garden mode' : ''}
+          title={isPlacementMode ? 'Play is disabled in placement modes' : ''}
         >
           {isRunning ? 'Pause' : 'Play'}
         </button>
@@ -107,6 +118,13 @@ export default function GridControls() {
         <div className="ml-auto text-gray-300">
           Generation: <span className="font-mono font-bold">{generation}</span>
         </div>
+
+        {mode === 'puzzle' && (
+          <div className="text-violet-300 text-sm font-semibold">
+            Puzzle {Math.min(puzzleIndex + 1, puzzleCount)}/{puzzleCount} · Seeds:{' '}
+            <span className="font-mono">{seedsRemaining}</span>
+          </div>
+        )}
       </div>
     </div>
   );

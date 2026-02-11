@@ -1,14 +1,17 @@
 'use client';
 
 import { useSelector } from 'react-redux';
-import { getBirthCandidates, getMode } from '@/lib/state/grid-dux';
+import { getBirthCandidates, getMode, getRunState } from '@/lib/state/grid-dux';
 
 export default function BirthCandidateBanner() {
   const birthCandidates = useSelector(getBirthCandidates);
   const mode = useSelector(getMode);
+  const runState = useSelector(getRunState);
 
-  // Only show in Life Garden mode when no candidates exist
-  if (mode !== 'lifeGarden' || birthCandidates.length > 0) {
+  const isPlacementMode = mode === 'lifeGarden' || mode === 'puzzle';
+
+  // Only show in placement modes when no candidates exist and run is active
+  if (!isPlacementMode || runState !== 'active' || birthCandidates.length > 0) {
     return null;
   }
 

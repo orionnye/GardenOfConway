@@ -13,7 +13,7 @@ export default function ModeToggle() {
   // Load mode from localStorage on mount
   useEffect(() => {
     const savedMode = localStorage.getItem(STORAGE_KEY);
-    if (savedMode === 'classic' || savedMode === 'lifeGarden') {
+    if (savedMode === 'classic' || savedMode === 'lifeGarden' || savedMode === 'puzzle') {
       dispatch(setMode({ mode: savedMode }));
     }
   }, [dispatch]);
@@ -25,7 +25,7 @@ export default function ModeToggle() {
     }
   }, [mode]);
 
-  const handleModeChange = (newMode: 'classic' | 'lifeGarden') => {
+  const handleModeChange = (newMode: 'classic' | 'lifeGarden' | 'puzzle') => {
     dispatch(setMode({ mode: newMode }));
   };
 
@@ -55,6 +55,18 @@ export default function ModeToggle() {
         aria-pressed={mode === 'lifeGarden'}
       >
         Life Garden
+      </button>
+      <button
+        onClick={() => handleModeChange('puzzle')}
+        className={`px-4 py-2 rounded transition-colors ${
+          mode === 'puzzle'
+            ? 'bg-violet-600 text-white'
+            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+        }`}
+        aria-label="Puzzle mode"
+        aria-pressed={mode === 'puzzle'}
+      >
+        Puzzle
       </button>
     </div>
   );

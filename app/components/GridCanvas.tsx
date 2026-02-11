@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as PIXI from 'pixi.js';
+import { getPlayspaceBounds, getViewportToFitPlayspace } from '@/lib/viewport/playspace';
 
 interface Cell {
   x: number;
@@ -12,7 +13,10 @@ interface GridCanvasProps {
   cells?: Cell[];
   bounds?: { width: number; height: number };
   birthCandidates?: Cell[];
-  mode?: 'classic' | 'lifeGarden';
+  goalTiles?: Cell[];
+  obstacles?: Cell[];
+  mode?: 'classic' | 'lifeGarden' | 'puzzle';
+  runState?: 'active' | 'won';
   onCellClick?: (cell: Cell, isAlive: boolean) => void;
   onDragPaint?: (cells: Cell[], mode: 'draw' | 'erase') => void;
   onBirthCandidateClick?: (cell: Cell) => void;
@@ -29,7 +33,10 @@ export default function GridCanvas({
   cells = [], 
   bounds = { width: 60, height: 60 },
   birthCandidates = [],
+  goalTiles = [],
+  obstacles = [],
   mode = 'classic',
+  runState = 'active',
   onCellClick,
   onDragPaint,
   onBirthCandidateClick,
@@ -41,6 +48,8 @@ export default function GridCanvas({
   const gridLinesRef = useRef<PIXI.Graphics | null>(null);
   const viewportContainerRef = useRef<PIXI.Container | null>(null);
   const ghostTilesContainerRef = useRef<PIXI.Container | null>(null);
+  const obstaclesContainerRef = useRef<PIXI.Container | null>(null);
+  const goalTilesContainerRef = useRef<PIXI.Container | null>(null);
   const birthCandidatesContainerRef = useRef<PIXI.Container | null>(null);
   const invalidClickFeedbackRef = useRef<PIXI.Graphics | null>(null);
   
@@ -66,7 +75,10 @@ export default function GridCanvas({
   // Store latest values in refs to avoid triggering re-initialization
   const cellsRef = useRef<Cell[]>(cells);
   const birthCandidatesRef = useRef<Cell[]>(birthCandidates);
+  const goalTilesRef = useRef<Cell[]>(goalTiles);
+  const obstaclesRef = useRef<Cell[]>(obstacles);
   const modeRef = useRef(mode);
+  const runStateRef = useRef(runState);
   const onCellClickRef = useRef(onCellClick);
   const onDragPaintRef = useRef(onDragPaint);
   const onBirthCandidateClickRef = useRef(onBirthCandidateClick);
@@ -77,7 +89,10 @@ export default function GridCanvas({
   useEffect(() => {
     cellsRef.current = cells;
     birthCandidatesRef.current = birthCandidates;
+    goalTilesRef.current = goalTiles;
+    obstaclesRef.current = obstacles;
     modeRef.current = mode;
+    runStateRef.current = runState;
     onCellClickRef.current = onCellClick;
     onDragPaintRef.current = onDragPaint;
     onBirthCandidateClickRef.current = onBirthCandidateClick;
@@ -86,18 +101,27 @@ export default function GridCanvas({
     viewportRef.current = viewport;
   });
   
-  // Calculate initial viewport scale
+  // Calculate initial viewport scale; in puzzle mode focus on playspace
   const getInitialViewport = useCallback((): Viewport => {
     if (!appRef.current) return { x: 0, y: 0, scale: 1 };
-    
-    const limits = calculateZoomLimits(
-      appRef.current.canvas.width,
-      appRef.current.canvas.height,
-      bounds.width,
-      bounds.height
-    );
-    
-    return { x: 0, y: 0, scale: limits.default };
+
+    const canvasW = appRef.current.canvas.width;
+    const canvasH = appRef.current.canvas.height;
+    const limits = calculateZoomLimits(canvasW, canvasH, bounds.width, bounds.height);
+    const defaultViewport: Viewport = { x: 0, y: 0, scale: limits.default };
+
+    if (modeRef.current === 'puzzle') {
+      const playspace = getPlayspaceBounds(
+        cellsRef.current,
+        goalTilesRef.current,
+        obstaclesRef.current,
+        bounds
+      );
+      if (playspace) {
+        return getViewportToFitPlayspace(canvasW, canvasH, playspace, bounds);
+      }
+    }
+    return defaultViewport;
   }, [bounds.width, bounds.height]);
   
   // Reset viewport function
@@ -117,6 +141,13 @@ export default function GridCanvas({
     };
   }, [onViewportReset, resetViewport]);
 
+  // When mode or puzzle identity changes, set viewport (playspace-fit in puzzle, full grid otherwise).
+  // Do not depend on cells: resetting on every cells change would undo user pan/zoom after each birth or step.
+  useEffect(() => {
+    if (!appRef.current) return;
+    setViewport(getInitialViewport());
+  }, [mode, goalTiles, obstacles, bounds.width, bounds.height, getInitialViewport]);
+
   // Helper: Create cell key for tracking
   const cellKey = (cell: Cell) => `${cell.x},${cell.y}`;
 
@@ -128,6 +159,11 @@ export default function GridCanvas({
   // Helper: Check if cell is a birth candidate
   const isBirthCandidate = (cell: Cell) => {
     return birthCandidatesRef.current.some(c => c.x === cell.x && c.y === cell.y);
+  };
+
+  // Helper: Check if cell is an obstacle
+  const isObstacle = (cell: Cell) => {
+    return obstaclesRef.current.some(c => c.x === cell.x && c.y === cell.y);
   };
 
   // Helper: Show invalid click feedback (red flash)
@@ -272,8 +308,20 @@ export default function GridCanvas({
         ghostTilesContainer.interactiveChildren = false; // Don't block pointer events
         viewportContainer.addChild(ghostTilesContainer);
         ghostTilesContainerRef.current = ghostTilesContainer;
+
+        // Create container for obstacles (above ghost tiles)
+        const obstaclesContainer = new PIXI.Container();
+        obstaclesContainer.interactiveChildren = false;
+        viewportContainer.addChild(obstaclesContainer);
+        obstaclesContainerRef.current = obstaclesContainer;
         
-        // Create container for birth candidates (above ghost tiles)
+        // Create container for goal tiles (above obstacles)
+        const goalTilesContainer = new PIXI.Container();
+        goalTilesContainer.interactiveChildren = false;
+        viewportContainer.addChild(goalTilesContainer);
+        goalTilesContainerRef.current = goalTilesContainer;
+        
+        // Create container for birth candidates (above goals)
         const birthCandidatesContainer = new PIXI.Container();
         birthCandidatesContainer.interactiveChildren = false;
         viewportContainer.addChild(birthCandidatesContainer);
@@ -315,8 +363,17 @@ export default function GridCanvas({
           const cell = getCellFromCoords(x, y);
           if (!cell) return;
           
-          // Life Garden mode: handle birth candidate clicks
-          if (modeRef.current === 'lifeGarden' && onBirthCandidateClickRef.current) {
+          const isPlacementMode = modeRef.current === 'lifeGarden' || modeRef.current === 'puzzle';
+
+          // Placement mode: handle birth candidate clicks
+          if (isPlacementMode && onBirthCandidateClickRef.current) {
+            if (runStateRef.current === 'won') {
+              return;
+            }
+            if (isObstacle(cell)) {
+              showInvalidClickFeedback(cell);
+              return;
+            }
             if (isBirthCandidate(cell)) {
               onBirthCandidateClickRef.current(cell);
             } else {
@@ -403,53 +460,57 @@ export default function GridCanvas({
           }
         };
         
-        // Handle mouse wheel for zooming
+        // Scroll/trackpad: pan by default; zoom when Ctrl/Cmd is held
         const handleWheel = (event: WheelEvent) => {
           event.preventDefault();
-          
+
           const rect = app.canvas.getBoundingClientRect();
           const mouseX = event.clientX - rect.left;
           const mouseY = event.clientY - rect.top;
-          
-          // Calculate dynamic zoom limits
-          const limits = calculateZoomLimits(
-            app.canvas.width,
-            app.canvas.height,
-            bounds.width,
-            bounds.height
-          );
-          
-          // Reduced zoom intensity for better control (0.05 instead of 0.1)
-          const zoomIntensity = 0.05;
-          const delta = -Math.sign(event.deltaY);
-          const scaleFactor = 1 + delta * zoomIntensity;
-          
-          setViewport(prev => {
-            // Apply dynamic zoom limits
-            const newScale = Math.max(limits.min, Math.min(limits.max, prev.scale * scaleFactor));
-            
-            // Zoom to cursor position
-            const worldX = (mouseX - prev.x) / prev.scale;
-            const worldY = (mouseY - prev.y) / prev.scale;
-            
-            const newX = mouseX - worldX * newScale;
-            const newY = mouseY - worldY * newScale;
-            
-            const newViewport = {
-              x: newX,
-              y: newY,
-              scale: newScale,
-            };
-            
-            // Apply pan boundary constraints after zoom
-            return clampViewport(
-              newViewport,
+
+          if (event.ctrlKey || event.metaKey) {
+            // Zoom to cursor (power users)
+            const limits = calculateZoomLimits(
               app.canvas.width,
               app.canvas.height,
               bounds.width,
               bounds.height
             );
-          });
+            const zoomIntensity = 0.05;
+            const delta = -Math.sign(event.deltaY);
+            const scaleFactor = 1 + delta * zoomIntensity;
+
+            setViewport(prev => {
+              const newScale = Math.max(limits.min, Math.min(limits.max, prev.scale * scaleFactor));
+              const worldX = (mouseX - prev.x) / prev.scale;
+              const worldY = (mouseY - prev.y) / prev.scale;
+              const newX = mouseX - worldX * newScale;
+              const newY = mouseY - worldY * newScale;
+              return clampViewport(
+                { x: newX, y: newY, scale: newScale },
+                app.canvas.width,
+                app.canvas.height,
+                bounds.width,
+                bounds.height
+              );
+            });
+            return;
+          }
+
+          // Pan: use deltaX/deltaY (trackpad and wheel). Normalize deltaMode for consistent feel.
+          const lineScale = 40;
+          const pageScale = 400;
+          const k = event.deltaMode === 1 ? lineScale : event.deltaMode === 2 ? pageScale : 1;
+          const dx = event.deltaX * k;
+          const dy = event.deltaY * k;
+
+          setViewport(prev => clampViewport(
+            { x: prev.x - dx, y: prev.y - dy, scale: prev.scale },
+            app.canvas.width,
+            app.canvas.height,
+            bounds.width,
+            bounds.height
+          ));
         };
 
         interactiveContainer.on('pointerdown', handlePointerDown);
@@ -535,6 +596,8 @@ export default function GridCanvas({
         cellsContainerRef.current = null;
         gridLinesRef.current = null;
         ghostTilesContainerRef.current = null;
+        obstaclesContainerRef.current = null;
+        goalTilesContainerRef.current = null;
       }
     };
   }, [bounds.width, bounds.height]); // Only re-initialize when bounds change
@@ -630,6 +693,90 @@ export default function GridCanvas({
     });
   }, [ghostTiles, bounds, dragMode]);
 
+  // Render obstacle tiles in Puzzle mode
+  useEffect(() => {
+    if (!appRef.current || !obstaclesContainerRef.current) return;
+
+    const obstacleContainer = obstaclesContainerRef.current;
+    const app = appRef.current;
+
+    obstacleContainer.removeChildren();
+
+    if (mode !== 'puzzle') return;
+
+    const cellSize = calculateCellSize(
+      app.canvas.width,
+      app.canvas.height,
+      bounds.width,
+      bounds.height
+    );
+
+    obstacles.forEach((cell) => {
+      const graphics = new PIXI.Graphics();
+      graphics.rect(
+        cell.x * cellSize,
+        cell.y * cellSize,
+        cellSize,
+        cellSize
+      );
+      graphics.fill({ color: 0x334155, alpha: 0.65 });
+      graphics.stroke({ color: 0x64748b, width: 1.5, alpha: 0.95 });
+      obstacleContainer.addChild(graphics);
+    });
+  }, [obstacles, bounds, mode]);
+
+  // Render goal tiles in Life Garden mode
+  useEffect(() => {
+    if (!appRef.current || !goalTilesContainerRef.current) return;
+
+    const goalsContainer = goalTilesContainerRef.current;
+    const app = appRef.current;
+
+    goalsContainer.removeChildren();
+
+    if (mode !== 'lifeGarden' && mode !== 'puzzle') return;
+
+    const cellSize = calculateCellSize(
+      app.canvas.width,
+      app.canvas.height,
+      bounds.width,
+      bounds.height
+    );
+    const liveCellSet = new Set(cells.map((cell) => `${cell.x},${cell.y}`));
+
+    goalTiles.forEach((cell) => {
+      const graphics = new PIXI.Graphics();
+      const isReached = liveCellSet.has(`${cell.x},${cell.y}`);
+
+      graphics.rect(
+        cell.x * cellSize,
+        cell.y * cellSize,
+        cellSize,
+        cellSize
+      );
+      graphics.fill({
+        color: isReached ? 0x7c3aed : 0x2563eb,
+        alpha: isReached ? 0.45 : 0.2,
+      });
+      graphics.stroke({
+        color: isReached ? 0xc4b5fd : 0x60a5fa,
+        width: isReached ? 3 : 2,
+        alpha: 0.95,
+      });
+      graphics.circle(
+        cell.x * cellSize + cellSize / 2,
+        cell.y * cellSize + cellSize / 2,
+        Math.max(cellSize * 0.15, 2)
+      );
+      graphics.fill({
+        color: isReached ? 0xffffff : 0x93c5fd,
+        alpha: isReached ? 0.9 : 0.75,
+      });
+
+      goalsContainer.addChild(graphics);
+    });
+  }, [goalTiles, cells, bounds, mode]);
+
   // Render birth candidates in Life Garden mode
   useEffect(() => {
     if (!appRef.current || !birthCandidatesContainerRef.current) return;
@@ -641,7 +788,7 @@ export default function GridCanvas({
     candidatesContainer.removeChildren();
 
     // Only render in Life Garden mode
-    if (mode !== 'lifeGarden') return;
+    if (mode !== 'lifeGarden' && mode !== 'puzzle') return;
 
     // Calculate cell size to fit viewport
     const cellSize = calculateCellSize(

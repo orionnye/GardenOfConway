@@ -4,6 +4,7 @@ import PatternPicker from './components/PatternPicker';
 import PatternExport from './components/PatternExport';
 import ModeToggle from './components/ModeToggle';
 import BirthCandidateBanner from './components/BirthCandidateBanner';
+import GoalWinBanner from './components/GoalWinBanner';
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         </div>
       </header>
       <BirthCandidateBanner />
+      <GoalWinBanner />
       <div className="flex-1 relative mt-20">
         <GridContainer />
         <PatternPicker />

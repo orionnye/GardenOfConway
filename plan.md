@@ -87,6 +87,84 @@
       - Epic: `tasks/birth-candidate-highlighting.md`
       - Status: Planned, ready for execution
 
+## 🚧 In Progress: Goal Challenge Loop (Life Garden Progression)
+
+- ✅ **Add puzzle mode** — Curated challenge mode with pre-seeded life and map goals
+  - Epic: `tasks/add-puzzle-mode.md`
+  - Priority: HIGHEST (defines the intended challenge experience)
+  - Status: Completed (approved)
+  - Scope:
+    - Add `puzzle` as a dedicated mode variant
+    - Load pre-generated goals and seeded stable starting cells
+    - Add finite seed economy for player births
+    - Add inert obstacles that cannot be grown through
+    - Preserve deterministic replay/restart per puzzle map
+
+- ✅ **Add puzzle progression** — Advance to subsequent puzzles after player confirms win
+  - Epic: `tasks/add-puzzle-progression.md`
+  - Priority: HIGHEST (enables campaign-style challenge loop)
+  - Status: Completed (user confirmed 3 puzzles + seed limit work)
+  - Scope:
+    - Add explicit `I won` confirmation action in puzzle win state
+    - Track puzzle index/order and completion progression
+    - Load next puzzle map after confirmed victory
+    - Support terminal completion when final puzzle is cleared
+
+- ⏸️ **Puzzle playspace view** — Limit grid view and zoom/center on puzzle playspace
+  - Epic: `tasks/puzzle-playspace-view.md`
+  - Priority: HIGH (improves puzzle readability and focus)
+  - Status: Implementation complete, awaiting user verification
+  - Scope:
+    - Derive or define playspace region from puzzle cells/goals/obstacles
+    - On puzzle load/reset, center view and zoom to fit playspace
+    - Optional pan/zoom limits in puzzle mode so playspace stays in focus
+    - No change to grid dimensions or simulation; view-only
+
+- 🚧 **Add goal tiles** — Define one or more map target cells that growth must reach
+  - Epic: `tasks/add-goal-tiles.md`
+  - Priority: HIGH (core objective loop for challenge mode)
+  - Status: Runtime visibility issue found; goal markers not appearing in gameplay
+  - Scope:
+    - Add goal cell data to state (single or multiple goals)
+    - Render goals as distinct map markers
+    - Add win condition: any live growth reaches a goal tile
+    - Add success feedback/UI state when goal is reached
+
+- 📋 **Fix goal tile runtime placement/visibility** — Ensure goals are injected into live Life Garden runs
+  - Epic: `tasks/fix-goal-tiles-visibility.md`
+  - Priority: HIGH (blocks challenge loop usability)
+  - Scope:
+    - Ensure non-empty `goalTiles` are set during Life Garden gameplay setup/reset
+    - Verify state-to-UI wiring from page/container into `GridCanvas`
+    - Add integration tests proving goal markers appear in real app flow
+
+- 📋 **Add seed limit economy** — Restrict player births to finite resources per run
+  - Epic: `tasks/add-seed-limit.md` (to create)
+  - Priority: HIGH (introduces meaningful player decisions)
+  - Scope:
+    - Add `seedsRemaining` to Life Garden state
+    - Decrement on valid player birth, not on invalid clicks
+    - Disable birth placement when seeds are exhausted
+    - Keep `Skip` available at zero seeds
+    - Add lose/fail condition if no seeds remain and no path to goal
+
+- 📋 **Add obstacle tiles** — Place inert map cells that cannot be occupied or grown through
+  - Epic: `tasks/add-obstacles.md` (to create)
+  - Priority: HIGH (enables level design and route shaping)
+  - Scope:
+    - Add obstacle coordinates to map state
+    - Treat obstacles as permanently blocked/inert cells in engine stepping
+    - Prevent player placement on obstacles
+    - Render obstacles as a separate immutable layer
+
+### Recommended implementation order for challenge mode
+
+1. Stabilize Life Garden turn flow (choice/advance/reveal + Skip).
+2. Add obstacle support in simulation and renderer (foundation for map constraints).
+3. Add goal tiles and goal-reached win detection.
+4. Add seed-limit resource system and fail-state checks.
+5. Add curated challenge maps that combine goals + obstacles + seed limits.
+
 ## Future: User Journey Testing
 
 - Create first user journey for testing

@@ -91,26 +91,26 @@ describe('GridCanvas - Viewport Controls', () => {
     });
   });
 
-  test('Mouse Wheel Zoom', async () => {
+  test('Mouse Wheel Pan', async () => {
     const { container } = render(<GridCanvas />);
 
     await waitFor(() => {
       const canvas = container.querySelector('canvas');
-      
+
       if (canvas) {
-        // Simulate wheel event
         const wheelEvent = new WheelEvent('wheel', {
-          deltaY: -100, // Scroll up to zoom in
+          deltaX: 20,
+          deltaY: 30,
+          deltaMode: 0,
           clientX: 400,
           clientY: 300,
         });
-        
         canvas.dispatchEvent(wheelEvent);
       }
 
       assert({
-        given: 'mouse wheel scroll event',
-        should: 'handle zoom event without errors',
+        given: 'mouse wheel scroll event (no modifier)',
+        should: 'handle wheel as pan without errors',
         actual: canvas !== null,
         expected: true,
       });

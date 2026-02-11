@@ -5,17 +5,26 @@ Dux {
     bounds: { width: 60, height: 60 }
     isRunning: false
     speed: 5 // 1-10 steps per second
-    mode: 'classic' // 'classic' | 'lifeGarden'
-    birthCandidates: [] // Valid birth positions in Life Garden mode
+    mode: 'classic' // 'classic' | 'lifeGarden' | 'puzzle'
+    birthCandidates: [] // Valid birth positions in placement modes
+    goalTiles: [] // Goal tile coordinates for challenge maps
+    obstacles: [] // Inert puzzle tiles that cannot be occupied
+    seedLimit: 0 // Total birth resources for a puzzle run
+    seedsRemaining: 0 // Remaining birth resources in puzzle mode
+    puzzleId: null // Active puzzle map identifier
+    puzzleIndex: 0 // Active puzzle position in ordered sequence
+    puzzleCount: 0 // Total number of puzzles in sequence
+    puzzleCampaignComplete: false // Terminal progression state
+    runState: 'active' // 'active' | 'won'
   }
 
   slice: "grid"
 
   actions {
-    setGrid(payload: { cells, bounds? })
+    setGrid(payload: { cells, bounds?, mode?, goalTiles?, obstacles?, seedLimit?, seedsRemaining?, runState? })
     stepGrid()
     clearGrid()
-    resetGrid(payload: { bounds? })
+    resetGrid(payload: { bounds?, puzzleId?, goalTiles? })
     toggleRunning()
     setCells(payload: { cells })
     loadPattern(payload: { pattern })
@@ -23,6 +32,8 @@ Dux {
     setSpeed(payload: { speed })
     setMode(payload: { mode })
     applyPlayerBirth(payload: { cell })
+    setGoalTiles(payload: { goalTiles })
+    confirmPuzzleVictory()
   }
 
   selectors {
@@ -34,6 +45,14 @@ Dux {
     getSpeed: state => state[slice].speed
     getMode: state => state[slice].mode
     getBirthCandidates: state => state[slice].birthCandidates
+    getGoalTiles: state => state[slice].goalTiles
+    getObstacles: state => state[slice].obstacles
+    getSeedLimit: state => state[slice].seedLimit
+    getSeedsRemaining: state => state[slice].seedsRemaining
+    getPuzzleIndex: state => state[slice].puzzleIndex
+    getPuzzleCount: state => state[slice].puzzleCount
+    getIsPuzzleCampaignComplete: state => state[slice].puzzleCampaignComplete
+    getRunState: state => state[slice].runState
   }
 
   requirements [

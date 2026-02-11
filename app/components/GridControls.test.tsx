@@ -202,4 +202,78 @@ describe('GridControls', () => {
       expected: true,
     });
   });
+
+  test('Step Button Disabled After Goal Win', () => {
+    const rootReducer = combineReducers({
+      grid: gridReducer,
+    });
+
+    const store = createStore(rootReducer, {
+      grid: {
+        cells: [],
+        generation: 3,
+        bounds: { width: 60, height: 60 },
+        isRunning: false,
+        speed: 5,
+        mode: 'lifeGarden',
+        birthCandidates: [],
+        goalTiles: [{ x: 1, y: 1 }],
+        runState: 'won',
+      },
+    });
+
+    const { getByText } = render(
+      <Provider store={store}>
+        <GridControls />
+      </Provider>
+    );
+
+    const stepButton = getByText('Step') as HTMLButtonElement;
+
+    assert({
+      given: 'Life Garden win state',
+      should: 'disable Step button',
+      actual: stepButton.disabled,
+      expected: true,
+    });
+  });
+
+  test('Puzzle seed counter display', () => {
+    const rootReducer = combineReducers({
+      grid: gridReducer,
+    });
+
+    const store = createStore(rootReducer, {
+      grid: {
+        cells: [],
+        generation: 2,
+        bounds: { width: 60, height: 60 },
+        isRunning: false,
+        speed: 5,
+        mode: 'puzzle',
+        birthCandidates: [],
+        goalTiles: [{ x: 24, y: 20 }],
+        obstacles: [{ x: 22, y: 19 }],
+        seedLimit: 8,
+        seedsRemaining: 6,
+        runState: 'active',
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <GridControls />
+      </Provider>
+    );
+
+    const seedText = document.body.textContent?.includes('Seeds:');
+    const seedValue = document.body.textContent?.includes('6');
+
+    assert({
+      given: 'puzzle mode state with remaining seeds',
+      should: 'render seed counter feedback',
+      actual: seedText && seedValue,
+      expected: true,
+    });
+  });
 });

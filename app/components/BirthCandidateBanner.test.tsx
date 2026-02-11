@@ -20,6 +20,7 @@ const createMockStore = (initialState = {}) => {
       speed: 5,
       mode: 'classic',
       birthCandidates: [],
+      runState: 'active',
       ...initialState,
     },
   };
@@ -108,6 +109,50 @@ describe('BirthCandidateBanner', () => {
       given: 'banner displayed',
       should: 'include helper text about next actions',
       actual: helperText !== null,
+      expected: true,
+    });
+  });
+
+  test('should not render when run is won', () => {
+    const store = createMockStore({
+      mode: 'lifeGarden',
+      runState: 'won',
+      birthCandidates: [],
+    });
+
+    const { container } = render(
+      <Provider store={store}>
+        <BirthCandidateBanner />
+      </Provider>
+    );
+
+    assert({
+      given: 'Life Garden run already won',
+      should: 'hide no-candidates banner',
+      actual: container.firstChild,
+      expected: null,
+    });
+  });
+
+  test('should render in puzzle mode with no candidates', () => {
+    const store = createMockStore({
+      mode: 'puzzle',
+      birthCandidates: [],
+      runState: 'active',
+    });
+
+    render(
+      <Provider store={store}>
+        <BirthCandidateBanner />
+      </Provider>
+    );
+
+    const message = screen.queryByText('No valid births available');
+
+    assert({
+      given: 'puzzle mode with no candidates',
+      should: 'display no births banner',
+      actual: message !== null,
       expected: true,
     });
   });

@@ -66,9 +66,9 @@ describe('ModeToggle', () => {
 
     assert({
       given: 'mode toggle component rendered',
-      should: 'display both Classic and Life Garden buttons',
+      should: 'display Classic, Life Garden, and Puzzle buttons',
       actual: buttons.length,
-      expected: 2,
+      expected: 3,
     });
   });
 
@@ -109,6 +109,27 @@ describe('ModeToggle', () => {
     assert({
       given: 'mode is "lifeGarden"',
       should: 'highlight Life Garden button with active style',
+      actual: hasActiveStyle,
+      expected: true,
+    });
+  });
+
+  test('puzzle mode active styling', () => {
+    const store = createMockStore({ mode: 'puzzle' });
+    const { container } = render(
+      <Provider store={store}>
+        <ModeToggle />
+      </Provider>
+    );
+
+    const puzzleButton = Array.from(container.querySelectorAll('button')).find(
+      btn => btn.textContent === 'Puzzle'
+    );
+    const hasActiveStyle = puzzleButton?.className.includes('bg-violet-600');
+
+    assert({
+      given: 'mode is "puzzle"',
+      should: 'highlight Puzzle button with active style',
       actual: hasActiveStyle,
       expected: true,
     });

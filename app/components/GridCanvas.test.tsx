@@ -1,18 +1,26 @@
-import { describe, test, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import assert from 'node:assert';
 import GridCanvas from './GridCanvas';
 import * as PIXI from 'pixi.js';
+
+const graphicsFillCalls: Array<{ color?: number; alpha?: number }> = [];
 
 // Mock PixiJS Application to avoid WebGL context in test environment
 vi.mock('pixi.js', () => {
   class MockGraphics {
     clear = vi.fn().mockReturnThis();
     rect = vi.fn().mockReturnThis();
-    fill = vi.fn().mockReturnThis();
+    fill = vi.fn((args?: { color?: number; alpha?: number }) => {
+      if (args) {
+        graphicsFillCalls.push(args);
+      }
+      return this;
+    });
     stroke = vi.fn().mockReturnThis();
     moveTo = vi.fn().mockReturnThis();
     lineTo = vi.fn().mockReturnThis();
+    circle = vi.fn().mockReturnThis();
   }
 
   class MockContainer {
@@ -53,6 +61,10 @@ vi.mock('pixi.js', () => {
 });
 
 describe('GridCanvas', () => {
+  beforeEach(() => {
+    graphicsFillCalls.length = 0;
+  });
+
   test('PixiJS Application Setup', async () => {
     const { container } = render(<GridCanvas />);
     
@@ -121,6 +133,83 @@ describe('GridCanvas', () => {
       assert({
         given: 'empty cells array',
         should: 'render canvas without crashing',
+        actual: canvas !== null,
+        expected: true,
+      });
+    });
+  });
+
+  test('Goal Tile Rendering in Life Garden mode', async () => {
+    const goals = [{ x: 2, y: 2 }, { x: 4, y: 4 }];
+    const cells = [{ x: 4, y: 4 }];
+
+    const { container } = render(
+      <GridCanvas
+        cells={cells}
+        bounds={{ width: 60, height: 60 }}
+        goalTiles={goals}
+        mode="lifeGarden"
+      />
+    );
+
+    await waitFor(() => {
+      const canvas = container.querySelector('canvas');
+      const colors = graphicsFillCalls.map((entry) => entry.color);
+
+      assert({
+        given: 'Life Garden mode with goal tiles',
+        should: 'render unreached and reached goal marker colors',
+        actual: canvas !== null && colors.includes(0x2563eb) && colors.includes(0x7c3aed),
+        expected: true,
+      });
+    });
+  });
+
+  test('Goal Tile Hidden in Classic mode', async () => {
+    const goals = [{ x: 2, y: 2 }];
+
+    const { container } = render(
+      <GridCanvas
+        cells={[]}
+        bounds={{ width: 60, height: 60 }}
+        goalTiles={goals}
+        mode="classic"
+      />
+    );
+
+    await waitFor(() => {
+      const canvas = container.querySelector('canvas');
+      const colors = graphicsFillCalls.map((entry) => entry.color);
+
+      assert({
+        given: 'Classic mode with goal tiles configured',
+        should: 'omit goal marker fills from rendering',
+        actual: canvas !== null && !colors.includes(0x2563eb) && !colors.includes(0x7c3aed),
+        expected: true,
+      });
+    });
+  });
+
+  test('Puzzle mode with playspace content renders and focuses view', async () => {
+    const cells = [{ x: 10, y: 10 }, { x: 11, y: 10 }];
+    const goalTiles = [{ x: 24, y: 20 }];
+    const obstacles = [{ x: 22, y: 19 }];
+
+    const { container } = render(
+      <GridCanvas
+        cells={cells}
+        bounds={{ width: 60, height: 60 }}
+        goalTiles={goalTiles}
+        obstacles={obstacles}
+        mode="puzzle"
+      />
+    );
+
+    await waitFor(() => {
+      const canvas = container.querySelector('canvas');
+      assert({
+        given: 'puzzle mode with cells, goals, and obstacles',
+        should: 'render canvas and apply playspace-focused viewport without error',
         actual: canvas !== null,
         expected: true,
       });
